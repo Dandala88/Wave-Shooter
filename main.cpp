@@ -13,7 +13,22 @@ SDL_Renderer* renderer = NULL;
 struct Vector2D {
 	double x;
 	double y;
+
+	Vector2D operator*(double scalar) const {
+        return {x * scalar, y * scalar};
+    }
+
+	Vector2D& operator+=(const Vector2D& other) {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
 };
+
+Vector2D operator+(Vector2D lhs, const Vector2D& rhs) {
+    lhs += rhs;
+    return lhs;
+}
 
 double magnitude(const Vector2D& vec) {
 	return sqrt(vec.x * vec.x + vec.y * vec.y);
@@ -33,36 +48,33 @@ Vector2D normalize(const Vector2D& vec) {
 class Actor
 {
 	public:
-		float x;
-		float y;
+		Vector2D position;
 		float width;
 		float height;
 		float speed;
-		float direction = 1;
+		Vector2D direction;
 
-		Actor(float x_val, float y_val, float width_val, float height_val, float speed_val, float direction_val) : x(x_val), y(y_val), width(width_val), height(height_val), speed(speed_val), direction(direction_val) {}
+		Actor(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) : position(position_val), width(width_val), height(height_val), speed(speed_val), direction(direction_val) {}
 };
 
 class Wave: public Actor
 {
 	public:
-		Vector2D initialDirection;
-
-		Wave(float x_val, float y_val, float width_val, float height_val, float speed_val, float direction_val) :
-        Actor(x_val, y_val, width_val, height_val, speed_val, direction_val) {}
+		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) :
+        Actor(position_val, width_val, height_val, speed_val, direction_val) {}
 };
 
-bool DetectCollision(Actor a, Actor b)
+bool detectCollision(Actor a, Actor b)
 {
-	auto a_max_x = a.x + a.width;
-	auto a_min_x = a.x;
-	auto a_max_y = a.y + a.height;
-	auto a_min_y = a.y;
+	auto a_max_x = a.position.x + a.width;
+	auto a_min_x = a.position.x;
+	auto a_max_y = a.position.y + a.height;
+	auto a_min_y = a.position.y;
 
-	auto b_max_x = b.x + b.width;
-	auto b_min_x = b.x;
-	auto b_max_y = b.y + b.height;
-	auto b_min_y = b.y;
+	auto b_max_x = b.position.x + b.width;
+	auto b_min_x = b.position.x;
+	auto b_max_y = b.position.y + b.height;
+	auto b_min_y = b.position.y;
 
 	if(a_max_x < b_min_x || a_min_x > b_max_x)
 		return false;
@@ -77,10 +89,10 @@ bool DetectCollision(Actor a, Actor b)
 bool quit = false;
 SDL_Event e;
 
-Actor player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 16, 16, 100, 1);
+Actor player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100);
 std::vector<Wave> waves;
 
-Actor enemy(SCREEN_WIDTH / 2 , 1, 16, 16, 100, 1);
+Actor enemy({ SCREEN_WIDTH / 2 , 1 }, 16, 16, 100, { 1.0, 0.0 });
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -136,15 +148,14 @@ void Update()
 
 		if (inputMade)
 		{
-			player.y += normalize(input).y * player.speed * deltaTime;
-			player.x += normalize(input).x * player.speed * deltaTime;
+			player.position += normalize(input) * player.speed * deltaTime;
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		SDL_RenderClear(renderer);
 
 		SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
-		SDL_Rect playerRect = { player.x, player.y, player.width, player.height };
+		SDL_Rect playerRect = { player.position.x, player.position.y, player.width, player.height };
 		SDL_RenderFillRect(renderer, &playerRect);
 
 		if (keyState[SDL_SCANCODE_SPACE] || keyState[SDL_SCANCODE_RETURN])
@@ -152,35 +163,33 @@ void Update()
 			if (fireCooldownCurrent >= fireCooldown)
 			{
 				fireCooldownCurrent = 0.0;
-				Wave wave(player.x , player.y - 6, 4, 4, 100, 1);
-				wave.initialDirection = {0.0, -1.0 };
+				Wave wave({ player.position.x , player.position.y - 6 }, 4, 4, 100, { 0.0, -1.0 });
 				waves.push_back(wave);
 			}
 		}
 
 		for (auto& wave : waves)
 		{
-			wave.y += wave.speed * normalize(wave.initialDirection).y * deltaTime;
-			wave.x += wave.speed * normalize(wave.initialDirection).x * deltaTime;
+			wave.position += normalize(wave.direction) * wave.speed * deltaTime;
 
-			if(DetectCollision(wave, enemy))
+			if(detectCollision(wave, enemy))
 			{
 				printf("Hit!\n");
 			}
-			SDL_Rect waveRect = { wave.x , wave.y - 6, wave.width, wave.height };
+			SDL_Rect waveRect = { wave.position.x , wave.position.y - 6, wave.width, wave.height };
 			SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
 			SDL_RenderFillRect(renderer, &waveRect);
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_Rect enemyRect = { enemy.x, enemy.y, enemy.width, enemy.height };
+		SDL_Rect enemyRect = { enemy.position.x, enemy.position.y, enemy.width, enemy.height };
 		SDL_RenderFillRect(renderer, &enemyRect);
 
-		if (enemy.x >= SCREEN_WIDTH - 16)
-			enemy.direction = -1;
-		if (enemy.x <= 0)
-			enemy.direction = 1;
-		enemy.x += enemy.speed * enemy.direction * deltaTime;
+		if (enemy.position.x >= SCREEN_WIDTH - 16)
+			enemy.direction.x = -1;
+		if (enemy.position.x <= 0)
+			enemy.direction.x = 1;
+		enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
 
 		SDL_RenderPresent(renderer);
 
