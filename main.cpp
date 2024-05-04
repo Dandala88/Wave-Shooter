@@ -54,7 +54,7 @@ class Actor
 		float speed;
 		Vector2D direction;
 		bool invincible = false;
-		float iFrames = 60;
+		float iFrames = 1.0;
 		float iFramesElapsed = 0;
 
 		Actor(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) : position(position_val), width(width_val), height(height_val), speed(speed_val), direction(direction_val) {}
@@ -64,10 +64,10 @@ class Actor
 			invincible = true;
 		}
 
-		void Update()
+		void Update(float dt)
 		{
 			if(invincible)
-				++iFramesElapsed;
+				iFramesElapsed += dt;
 			
 			if(iFramesElapsed >= iFrames)
 			{
@@ -80,7 +80,7 @@ class Actor
 class Wave: public Actor
 {
 	public:
-		float lifetime = 60;
+		float lifetime = 1.0;
 		float lifeElapsed = 0;
 
 		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) :
@@ -214,7 +214,7 @@ void Update()
 					SDL_RenderFillRect(renderer, &waveRect);
 					++waveIter;
 				}
-				++wave.lifeElapsed;
+				wave.lifeElapsed += deltaTime;
 			}
 		}
 
@@ -227,7 +227,7 @@ void Update()
 		if (enemy.position.x <= 0)
 			enemy.direction.x = 1;
 		enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
-		enemy.Update();
+		enemy.Update(deltaTime);
 
 		SDL_RenderPresent(renderer);
 
