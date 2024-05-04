@@ -53,13 +53,36 @@ class Actor
 		float height;
 		float speed;
 		Vector2D direction;
+		bool invincible = false;
+		float iFrames = 60;
+		float iFramesElapsed = 0;
 
 		Actor(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) : position(position_val), width(width_val), height(height_val), speed(speed_val), direction(direction_val) {}
+
+		void Hurt()
+		{
+			invincible = true;
+		}
+
+		void Update()
+		{
+			if(invincible)
+				++iFramesElapsed;
+			
+			if(iFramesElapsed >= iFrames)
+			{
+				invincible = false;
+				iFramesElapsed = 0;
+			}
+		}
 };
 
 class Wave: public Actor
 {
 	public:
+		float lifetime = 60;
+		float lifeElapsed = 0;
+
 		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) :
         Actor(position_val, width_val, height_val, speed_val, direction_val) {}
 };
@@ -92,7 +115,7 @@ SDL_Event e;
 Actor player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100);
 std::vector<Wave> waves;
 
-Actor enemy({ SCREEN_WIDTH / 2 , 1 }, 16, 16, 100, { 1.0, 0.0 });
+Actor enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, { 1.0, 0.0 });
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -168,17 +191,31 @@ void Update()
 			}
 		}
 
-		for (auto& wave : waves)
+		auto waveIter = waves.begin();
+		while (waveIter != waves.end())
 		{
-			wave.position += normalize(wave.direction) * wave.speed * deltaTime;
-
-			if(detectCollision(wave, enemy))
+			auto& wave = *waveIter;
+			if(wave.lifeElapsed >= wave.lifetime)
+				waveIter = waves.erase(waveIter);
+			else
 			{
-				printf("Hit!\n");
+				wave.position += normalize(wave.direction) * wave.speed * deltaTime;
+
+				if (detectCollision(wave, enemy) && !enemy.invincible)
+				{
+					printf("Hit!\n");
+					waveIter = waves.erase(waveIter);
+					enemy.Hurt();
+				}
+				else
+				{
+					SDL_Rect waveRect = { wave.position.x , wave.position.y - 6, wave.width, wave.height };
+					SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
+					SDL_RenderFillRect(renderer, &waveRect);
+					++waveIter;
+				}
+				++wave.lifeElapsed;
 			}
-			SDL_Rect waveRect = { wave.position.x , wave.position.y - 6, wave.width, wave.height };
-			SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
-			SDL_RenderFillRect(renderer, &waveRect);
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
@@ -190,6 +227,7 @@ void Update()
 		if (enemy.position.x <= 0)
 			enemy.direction.x = 1;
 		enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
+		enemy.Update();
 
 		SDL_RenderPresent(renderer);
 
