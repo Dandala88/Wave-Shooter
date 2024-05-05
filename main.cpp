@@ -109,6 +109,8 @@ class Character: public Actor
 		}
 };
 
+
+
 class Wave: public Actor
 {
 	public:
@@ -117,6 +119,28 @@ class Wave: public Actor
 
 		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val) :
         Actor(position_val, width_val, height_val, speed_val, color_val) {}
+};
+
+class Enemy: public Character
+{
+	public:
+		float attackElapsed = 0;
+		float attackCooldown = 1.0;
+		Enemy(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
+		Character(position_val, width_val, height_val, speed_val, maxHealth, color_val) {}
+
+		void AutoAttack(float dt, std::vector<Wave>& waves)
+		{
+			if(attackElapsed >= attackCooldown)
+			{
+				attackElapsed = 0;
+				SDL_Color waveColor = { 0x00, 0xFF, 0x00, 0xFF };
+				Wave wave({ position.x + (width / 2 - wave.width / 2) , position.y + height + 1 }, 4, 4, 100, waveColor);
+				wave.direction = { 0.0, 1.0 };
+				waves.push_back(wave);
+			}
+			attackElapsed += dt;
+		}
 };
 
 bool detectCollision(Actor a, Actor b)
@@ -149,7 +173,7 @@ Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playe
 std::vector<Wave> waves;
 
 SDL_Color enemyColor { 0xFF, 0x00, 0x00, 0xFF };
-Character enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2, enemyColor);
+Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2, enemyColor);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -260,6 +284,7 @@ void Update()
 				enemy.direction.x = 1;
 			enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
 			enemy.Update(deltaTime);
+			enemy.AutoAttack(deltaTime, waves);
 		}
 
 		SDL_RenderPresent(renderer);
