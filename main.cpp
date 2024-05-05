@@ -57,10 +57,19 @@ class Actor
 		bool invincible = false;
 		float iFrames = 1.0;
 		float iFramesElapsed = 0;
+		SDL_Color color;
 
-		Actor(Vector2D position_val, float width_val, float height_val, float speed_val) : position(position_val), width(width_val), height(height_val), speed(speed_val) 
+
+		Actor(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val) : position(position_val), width(width_val), height(height_val), speed(speed_val), color(color_val) 
 		{
 			direction = { 0.0, 0.0 };
+		}
+
+		void Render()
+		{
+			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+			SDL_Rect actorRect = { position.x, position.y, width, height };
+			SDL_RenderFillRect(renderer, &actorRect);
 		}
 };
 
@@ -70,10 +79,9 @@ class Character: public Actor
 		int health;
 		int maxHealth;
 		bool dead = false;
-		SDL_Color color;
 
 		Character(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
-		Actor(position_val, width_val, height_val, speed_val) 
+		Actor(position_val, width_val, height_val, speed_val, color_val) 
 		{
 			health = maxHealth;
 			color = color_val;
@@ -99,13 +107,6 @@ class Character: public Actor
 				iFramesElapsed = 0;
 			}
 		}
-
-		void Render()
-		{
-			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-			SDL_Rect enemyRect = { position.x, position.y, width, height };
-			SDL_RenderFillRect(renderer, &enemyRect);
-		}
 };
 
 class Wave: public Actor
@@ -114,8 +115,8 @@ class Wave: public Actor
 		float lifetime = 1.0;
 		float lifeElapsed = 0;
 
-		Wave(Vector2D position_val, float width_val, float height_val, float speed_val) :
-        Actor(position_val, width_val, height_val, speed_val) {}
+		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val) :
+        Actor(position_val, width_val, height_val, speed_val, color_val) {}
 };
 
 bool detectCollision(Actor a, Actor b)
@@ -210,16 +211,15 @@ void Update()
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		SDL_RenderClear(renderer);
 
-		SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
-		SDL_Rect playerRect = { player.position.x, player.position.y, player.width, player.height };
-		SDL_RenderFillRect(renderer, &playerRect);
+		player.Render();
 
 		if (keyState[SDL_SCANCODE_SPACE] || keyState[SDL_SCANCODE_RETURN])
 		{
 			if (fireCooldownCurrent >= fireCooldown)
 			{
 				fireCooldownCurrent = 0.0;
-				Wave wave({ player.position.x + (player.width / 2 - wave.width / 2) , player.position.y }, 4, 4, 100);
+				SDL_Color waveColor = { 0x00, 0xFF, 0x00, 0xFF };
+				Wave wave({ player.position.x + (player.width / 2 - wave.width / 2) , player.position.y }, 4, 4, 100, waveColor);
 				wave.direction = { 0.0, -1.0 };
 				waves.push_back(wave);
 			}
@@ -243,9 +243,7 @@ void Update()
 				}
 				else
 				{
-					SDL_Rect waveRect = { wave.position.x , wave.position.y - 6, wave.width, wave.height };
-					SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
-					SDL_RenderFillRect(renderer, &waveRect);
+					wave.Render();
 					++waveIter;
 				}
 				wave.lifeElapsed += deltaTime;
