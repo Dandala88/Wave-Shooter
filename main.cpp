@@ -69,17 +69,23 @@ class Character: public Actor
 	public:
 		int health;
 		int maxHealth;
+		bool dead = false;
+		SDL_Color color;
 
-		Character(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth) :
+		Character(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
 		Actor(position_val, width_val, height_val, speed_val) 
 		{
 			health = maxHealth;
+			color = color_val;
 		}
 
 		void Hurt()
 		{
 			invincible = true;
 			--health;
+			
+			if(health <= 0)
+				dead = true;
 		}
 
 		void Update(float dt)
@@ -92,6 +98,13 @@ class Character: public Actor
 				invincible = false;
 				iFramesElapsed = 0;
 			}
+		}
+
+		void Render()
+		{
+			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+			SDL_Rect enemyRect = { position.x, position.y, width, height };
+			SDL_RenderFillRect(renderer, &enemyRect);
 		}
 };
 
@@ -130,10 +143,12 @@ bool detectCollision(Actor a, Actor b)
 bool quit = false;
 SDL_Event e;
 
-Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10);
+SDL_Color playerColor { 0x00, 0xFF, 0x00, 0xFF };
+Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playerColor);
 std::vector<Wave> waves;
 
-Character enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2);
+SDL_Color enemyColor { 0xFF, 0x00, 0x00, 0xFF };
+Character enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2, enemyColor);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -237,16 +252,17 @@ void Update()
 			}
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_Rect enemyRect = { enemy.position.x, enemy.position.y, enemy.width, enemy.height };
-		SDL_RenderFillRect(renderer, &enemyRect);
+		if(!enemy.dead)
+		{
+			enemy.Render();
 
-		if (enemy.position.x >= SCREEN_WIDTH - 16)
-			enemy.direction.x = -1;
-		if (enemy.position.x <= 0)
-			enemy.direction.x = 1;
-		enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
-		enemy.Update(deltaTime);
+			if (enemy.position.x >= SCREEN_WIDTH - 16)
+				enemy.direction.x = -1;
+			if (enemy.position.x <= 0)
+				enemy.direction.x = 1;
+			enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
+			enemy.Update(deltaTime);
+		}
 
 		SDL_RenderPresent(renderer);
 
