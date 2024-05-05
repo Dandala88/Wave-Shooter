@@ -96,7 +96,7 @@ class Character: public Actor
 				dead = true;
 		}
 
-		void Update(float dt)
+		virtual void Update(float dt)
 		{
 			if(invincible)
 				iFramesElapsed += dt;
@@ -127,14 +127,34 @@ class Enemy: public Character
 		float attackElapsed = 0;
 		float attackCooldown = 1.0;
 		Enemy(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
-		Character(position_val, width_val, height_val, speed_val, maxHealth, color_val) {}
+		Character(position_val, width_val, height_val, speed_val, maxHealth, color_val) 
+		{
+			direction = { 1.0, 0.0 };
+		}
+
+		void Update(float dt) override 
+		{
+			Character::Update(dt);
+
+			if(!dead)
+			{
+				if (position.x >= SCREEN_WIDTH - width)
+					direction.x = -1;
+				if (position.x <= 0)
+					direction.x = 1;
+				position.x += speed * direction.x * dt;
+
+				Render();
+			}
+
+		}
 
 		void AutoAttack(float dt, std::vector<Wave>& waves)
 		{
 			if(attackElapsed >= attackCooldown)
 			{
 				attackElapsed = 0;
-				SDL_Color waveColor = { 0x00, 0xFF, 0x00, 0xFF };
+				SDL_Color waveColor = color;
 				Wave wave({ position.x + (width / 2 - wave.width / 2) , position.y + height + 1 }, 4, 4, 100, waveColor);
 				wave.direction = { 0.0, 1.0 };
 				waves.push_back(wave);
@@ -173,7 +193,7 @@ Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playe
 std::vector<Wave> waves;
 
 SDL_Color enemyColor { 0xFF, 0x00, 0x00, 0xFF };
-Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2, enemyColor);
+Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 100, 2, enemyColor);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -273,19 +293,8 @@ void Update()
 				wave.lifeElapsed += deltaTime;
 			}
 		}
-
-		if(!enemy.dead)
-		{
-			enemy.Render();
-
-			if (enemy.position.x >= SCREEN_WIDTH - 16)
-				enemy.direction.x = -1;
-			if (enemy.position.x <= 0)
-				enemy.direction.x = 1;
-			enemy.position.x += enemy.speed * enemy.direction.x * deltaTime;
-			enemy.Update(deltaTime);
-			enemy.AutoAttack(deltaTime, waves);
-		}
+		enemy.Update(deltaTime);
+		enemy.AutoAttack(deltaTime, waves);
 
 		SDL_RenderPresent(renderer);
 
