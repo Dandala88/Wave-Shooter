@@ -156,7 +156,7 @@ class Enemy: public Character
 			{
 				attackElapsed = 0;
 				SDL_Color waveColor = color;
-				Wave wave({ position.x + (width / 2 - wave.width / 2) , position.y + height + 1 }, 4, 4, 100, waveColor, this);
+				Wave wave({ position.x + (width / 2 - wave.width) , position.y + height + 1 }, 4, 4, 100, waveColor, this);
 				wave.direction = { 0.0, 1.0 };
 				waves.push_back(wave);
 			}
@@ -194,7 +194,7 @@ Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playe
 std::vector<Wave> waves;
 
 SDL_Color enemyColor { 0xFF, 0x00, 0x00, 0xFF };
-Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2, enemyColor);
+Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 80, 2, enemyColor);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
