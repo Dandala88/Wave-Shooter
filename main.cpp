@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <iostream>
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -57,11 +58,28 @@ class Actor
 		float iFrames = 1.0;
 		float iFramesElapsed = 0;
 
-		Actor(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) : position(position_val), width(width_val), height(height_val), speed(speed_val), direction(direction_val) {}
+		Actor(Vector2D position_val, float width_val, float height_val, float speed_val) : position(position_val), width(width_val), height(height_val), speed(speed_val) 
+		{
+			direction = { 0.0, 0.0 };
+		}
+};
+
+class Character: public Actor
+{
+	public:
+		int health;
+		int maxHealth;
+
+		Character(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth) :
+		Actor(position_val, width_val, height_val, speed_val) 
+		{
+			health = maxHealth;
+		}
 
 		void Hurt()
 		{
 			invincible = true;
+			--health;
 		}
 
 		void Update(float dt)
@@ -83,8 +101,8 @@ class Wave: public Actor
 		float lifetime = 1.0;
 		float lifeElapsed = 0;
 
-		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, Vector2D direction_val = { 0.0, 0.0 }) :
-        Actor(position_val, width_val, height_val, speed_val, direction_val) {}
+		Wave(Vector2D position_val, float width_val, float height_val, float speed_val) :
+        Actor(position_val, width_val, height_val, speed_val) {}
 };
 
 bool detectCollision(Actor a, Actor b)
@@ -112,10 +130,10 @@ bool detectCollision(Actor a, Actor b)
 bool quit = false;
 SDL_Event e;
 
-Actor player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100);
+Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10);
 std::vector<Wave> waves;
 
-Actor enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, { 1.0, 0.0 });
+Character enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -186,7 +204,8 @@ void Update()
 			if (fireCooldownCurrent >= fireCooldown)
 			{
 				fireCooldownCurrent = 0.0;
-				Wave wave({ player.position.x , player.position.y - 6 }, 4, 4, 100, { 0.0, -1.0 });
+				Wave wave({ player.position.x + (player.width / 2 - wave.width / 2) , player.position.y }, 4, 4, 100);
+				wave.direction = { 0.0, -1.0 };
 				waves.push_back(wave);
 			}
 		}
