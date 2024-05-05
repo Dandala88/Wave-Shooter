@@ -106,6 +106,9 @@ class Character: public Actor
 				invincible = false;
 				iFramesElapsed = 0;
 			}
+
+			if(!dead)
+				Render();
 		}
 };
 
@@ -116,9 +119,13 @@ class Wave: public Actor
 	public:
 		float lifetime = 1.0;
 		float lifeElapsed = 0;
+		Character* owner;
 
-		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val) :
-        Actor(position_val, width_val, height_val, speed_val, color_val) {}
+		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val, Character* owner_val) :
+        Actor(position_val, width_val, height_val, speed_val, color_val) 
+		{
+			owner = owner_val;
+		}
 };
 
 class Enemy: public Character
@@ -136,26 +143,20 @@ class Enemy: public Character
 		{
 			Character::Update(dt);
 
-			if(!dead)
-			{
-				if (position.x >= SCREEN_WIDTH - width)
-					direction.x = -1;
-				if (position.x <= 0)
-					direction.x = 1;
-				position.x += speed * direction.x * dt;
-
-				Render();
-			}
-
+			if (position.x >= SCREEN_WIDTH - width)
+				direction.x = -1;
+			if (position.x <= 0)
+				direction.x = 1;
+			position.x += speed * direction.x * dt;
 		}
 
 		void AutoAttack(float dt, std::vector<Wave>& waves)
 		{
-			if(attackElapsed >= attackCooldown)
+			if(attackElapsed >= attackCooldown && !dead)
 			{
 				attackElapsed = 0;
 				SDL_Color waveColor = color;
-				Wave wave({ position.x + (width / 2 - wave.width / 2) , position.y + height + 1 }, 4, 4, 100, waveColor);
+				Wave wave({ position.x + (width / 2 - wave.width / 2) , position.y + height + 1 }, 4, 4, 100, waveColor, this);
 				wave.direction = { 0.0, 1.0 };
 				waves.push_back(wave);
 			}
@@ -193,7 +194,7 @@ Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playe
 std::vector<Wave> waves;
 
 SDL_Color enemyColor { 0xFF, 0x00, 0x00, 0xFF };
-Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 100, 2, enemyColor);
+Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 0, 2, enemyColor);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -255,15 +256,14 @@ void Update()
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		SDL_RenderClear(renderer);
 
-		player.Render();
-
 		if (keyState[SDL_SCANCODE_SPACE] || keyState[SDL_SCANCODE_RETURN])
 		{
 			if (fireCooldownCurrent >= fireCooldown)
 			{
 				fireCooldownCurrent = 0.0;
 				SDL_Color waveColor = { 0x00, 0xFF, 0x00, 0xFF };
-				Wave wave({ player.position.x + (player.width / 2 - wave.width / 2) , player.position.y }, 4, 4, 100, waveColor);
+				Wave wave({ player.position.x + (player.width / 2 - wave.width / 2) , player.position.y }, 4, 4, 100, waveColor, &player);
+
 				wave.direction = { 0.0, -1.0 };
 				waves.push_back(wave);
 			}
@@ -281,9 +281,21 @@ void Update()
 
 				if (detectCollision(wave, enemy) && !enemy.invincible)
 				{
-					printf("Hit!\n");
-					waveIter = waves.erase(waveIter);
-					enemy.Hurt();
+					if(wave.owner != &enemy)
+					{
+						printf("Hit!\n");
+						waveIter = waves.erase(waveIter);
+						enemy.Hurt();
+					}
+				}
+				else if (detectCollision(wave, player) && !player.invincible)
+				{
+					if(wave.owner != &player)
+					{
+						printf("Ouch!\n");
+						waveIter = waves.erase(waveIter);
+						player.Hurt();
+					}
 				}
 				else
 				{
@@ -293,6 +305,8 @@ void Update()
 				wave.lifeElapsed += deltaTime;
 			}
 		}
+
+		player.Update(deltaTime);
 		enemy.Update(deltaTime);
 		enemy.AutoAttack(deltaTime, waves);
 
