@@ -49,6 +49,7 @@ Vector2D normalize(const Vector2D& vec) {
 class Actor
 {
 	public:
+		std::string name;
 		Vector2D position;
 		float width;
 		float height;
@@ -60,9 +61,10 @@ class Actor
 		SDL_Color color;
 
 
-		Actor(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val) : position(position_val), width(width_val), height(height_val), speed(speed_val), color(color_val) 
+		Actor(std::string name, Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val) : position(position_val), width(width_val), height(height_val), speed(speed_val), color(color_val) 
 		{
 			direction = { 0.0, 0.0 };
+			actors.push_back(this);
 		}
 
 		void Render()
@@ -71,7 +73,11 @@ class Actor
 			SDL_Rect actorRect = { position.x, position.y, width, height };
 			SDL_RenderFillRect(renderer, &actorRect);
 		}
+
+		static std::vector<Actor*> actors;
 };
+
+std::vector<Actor*> Actor::actors;
 
 class Character: public Actor
 {
@@ -80,11 +86,12 @@ class Character: public Actor
 		int maxHealth;
 		bool dead = false;
 
-		Character(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
-		Actor(position_val, width_val, height_val, speed_val, color_val) 
+		Character(std::string name_val, Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
+		Actor(name_val, position_val, width_val, height_val, speed_val, color_val) 
 		{
 			health = maxHealth;
 			color = color_val;
+			name = name_val;
 		}
 
 		void Hurt()
@@ -122,9 +129,14 @@ class Wave: public Actor
 		Character* owner;
 
 		Wave(Vector2D position_val, float width_val, float height_val, float speed_val, SDL_Color color_val, Character* owner_val) :
-        Actor(position_val, width_val, height_val, speed_val, color_val) 
+        Actor("wave", position_val, width_val, height_val, speed_val, color_val) 
 		{
 			owner = owner_val;
+		}
+
+		virtual Actor OnHit(Actor other)
+		{
+			std::cout << "actor hit" << std::endl;
 		}
 };
 
@@ -133,10 +145,11 @@ class Enemy: public Character
 	public:
 		float attackElapsed = 0;
 		float attackCooldown = 1.0;
-		Enemy(Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
-		Character(position_val, width_val, height_val, speed_val, maxHealth, color_val) 
+		Enemy(std::string name_val, Vector2D position_val, float width_val, float height_val, float speed_val, int maxHealth, SDL_Color color_val) :
+		Character(name_val, position_val, width_val, height_val, speed_val, maxHealth, color_val) 
 		{
 			direction = { 1.0, 0.0 };
+			name = name_val;
 		}
 
 		void Update(float dt) override 
@@ -190,11 +203,11 @@ bool quit = false;
 SDL_Event e;
 
 SDL_Color playerColor { 0x00, 0xFF, 0x00, 0xFF };
-Character player({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playerColor);
+Character player("player", { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 }, 16, 16, 100, 10, playerColor);
 std::vector<Wave> waves;
 
 SDL_Color enemyColor { 0xFF, 0x00, 0x00, 0xFF };
-Enemy enemy({ SCREEN_WIDTH / 2 , 50 }, 16, 16, 80, 2, enemyColor);
+Enemy enemy("enemy_1", { SCREEN_WIDTH / 2 , 50 }, 16, 16, 80, 2, enemyColor);
 std::vector<SDL_Rect> eWaves;
 
 int currentFrame = 1;
@@ -202,6 +215,15 @@ Uint64 lastTick = SDL_GetTicks64();
 
 float fireCooldown = 0.25;
 float fireCooldownCurrent = fireCooldown;
+
+void Init()
+{
+	printf("initialize \n");
+	for(auto actor : Actor::actors)
+	{
+		std::cout << "Actor: " << actor->name << std::endl;
+	}
+}
 
 void Update()
 {
@@ -336,6 +358,7 @@ int main(int argc, char* args[])
 		}
 		else
 		{
+			Init();
 			Update();
 		}
 	}
