@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include "../include/vector2d.h"
+#include "../include/rectangle.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -53,9 +54,18 @@ void Update()
 			}
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+		SDL_SetRenderDrawColor(renderer, 255, 255, 0x00, 0xFF);
 		SDL_Rect rect = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 16, 16 };
 		SDL_RenderFillRect(renderer, &rect);
+
+		Rectangle rectangle = 
+		{ 
+			50, SCREEN_HEIGHT / 2, 
+			16, 16, 
+			Color::blue,
+		};
+
+		rectangle.render(renderer);
 
 		SDL_RenderPresent(renderer);
 	}
