@@ -3,7 +3,7 @@
 #and may not be redistributed without written permission.
 
 #OBJS specifies which files to compile as part of the project
-OBJS = main.cpp
+OBJS = main.cpp vector2d.cpp ousia.cpp form.cpp rectangle.cpp boundingbox.cpp
 
 #CC specifies which compiler we're using
 CC = g++
@@ -16,7 +16,7 @@ COMPILER_FLAGS = -w
 LINKER_FLAGS = -lSDL2
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = WaveShooter
+OBJ_NAME = waveshooter
 
 #This is the target that compiles our executable
 all : $(OBJS)

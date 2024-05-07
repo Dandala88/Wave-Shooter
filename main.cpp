@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include "vector2d.h"
+#include "ousia.h"
+#include "rectangle.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -9,41 +12,6 @@ const int SCREEN_HEIGHT = 480;
 SDL_Window* window = NULL;
 SDL_Texture* screenTexture = NULL;
 SDL_Renderer* renderer = NULL;
-
-struct Vector2D {
-	double x;
-	double y;
-
-	Vector2D operator*(double scalar) const {
-        return {x * scalar, y * scalar};
-    }
-
-	Vector2D& operator+=(const Vector2D& other) {
-        x += other.x;
-        y += other.y;
-        return *this;
-    }
-};
-
-Vector2D operator+(Vector2D lhs, const Vector2D& rhs) {
-    lhs += rhs;
-    return lhs;
-}
-
-double magnitude(const Vector2D& vec) {
-	return sqrt(vec.x * vec.x + vec.y * vec.y);
-}
-
-Vector2D normalize(const Vector2D& vec) {
-	double mag = magnitude(vec);
-	if (mag != 0) {
-		return { vec.x / mag, vec.y / mag };
-	}
-	else {
-		// Return a zero vector if the magnitude is zero
-		return { 0.0, 0.0 };
-	}
-}
 
 class Actor
 {
@@ -124,6 +92,28 @@ Uint64 lastTick = SDL_GetTicks64();
 float fireCooldown = 0.25;
 float fireCooldownCurrent = fireCooldown;
 
+	Rectangle testForm = 
+	{ 
+		renderer, 
+		{ 0, 0 }, 
+		16, 
+		16, 
+		{ 0x00, 0x00, 0xFF, 0xFF }, 
+	};
+
+	Ousia testOusia 
+	{ 
+		"test", 
+		{ 0, 0 }, 
+		&testForm, 
+	};
+
+void Init()
+{
+	testForm.renderer = renderer;
+	testOusia.form = &testForm;
+}
+
 void Update()
 {
 	while (!quit)
@@ -171,11 +161,15 @@ void Update()
 
 		if (inputMade)
 		{
-			player.position += normalize(input) * player.speed * deltaTime;
+			player.position += input.normalize() * player.speed * deltaTime;
+			testOusia.position += input.normalize() * player.speed * deltaTime;
 		}
 
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 		SDL_RenderClear(renderer);
+
+		testOusia.Update(deltaTime);
+
 
 		SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
 		SDL_Rect playerRect = { player.position.x, player.position.y, player.width, player.height };
@@ -199,7 +193,7 @@ void Update()
 				waveIter = waves.erase(waveIter);
 			else
 			{
-				wave.position += normalize(wave.direction) * wave.speed * deltaTime;
+				wave.position += wave.direction.normalize() * wave.speed * deltaTime;
 
 				if (detectCollision(wave, enemy) && !enemy.invincible)
 				{
@@ -255,6 +249,7 @@ int main(int argc, char* args[])
 		}
 		else
 		{
+			Init();
 			Update();
 		}
 	}
