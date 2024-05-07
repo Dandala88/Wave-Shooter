@@ -1,4 +1,4 @@
-#include "boundingbox.h"
+#include "../include/boundingbox.h"
 
 BoundingBox::BoundingBox(Vector2D center, float width, float height) : center(center), width(width), height(height) {}
 

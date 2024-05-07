@@ -1,4 +1,4 @@
-#include "vector2d.h"
+#include "../include/vector2d.h"
 #include <math.h>
 
 Vector2D Vector2D::operator*(double scalar) const {

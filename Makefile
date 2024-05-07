@@ -3,7 +3,7 @@
 #and may not be redistributed without written permission.
 
 #OBJS specifies which files to compile as part of the project
-OBJS = main.cpp vector2d.cpp boundingbox.cpp
+OBJS = src/main.cpp src/vector2d.cpp src/boundingbox.cpp
 
 #CC specifies which compiler we're using
 CC = g++
