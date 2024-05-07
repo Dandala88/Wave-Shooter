@@ -1,6 +1,6 @@
 #pragma once
 
-struct Dimension
+struct Dimensions
 {
     public:
         float w;
