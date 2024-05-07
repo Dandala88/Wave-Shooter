@@ -60,8 +60,8 @@ void Update()
 
 		Rectangle rectangle = 
 		{ 
-			50, SCREEN_HEIGHT / 2, 
-			16, 16, 
+			{ 50, SCREEN_HEIGHT / 2 }, 
+			{ 16, 16 }, 
 			Color::blue,
 		};
 

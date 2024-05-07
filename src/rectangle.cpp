@@ -1,10 +1,10 @@
 #include "../include/rectangle.h"
 
-Rectangle::Rectangle(float x, float y, float w, float h, Color color) : x(x), y(y), w(w), h(h), color(color) {}
+Rectangle::Rectangle(Vector2D location, Dimension dimension, Color color) : location(location), dimension(dimension), color(color) {}
 
 void Rectangle::render(SDL_Renderer* renderer)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_Rect rect = { x, y, w, h };
+    SDL_Rect rect = { location.x, location.y, dimension.w, dimension.h };
     SDL_RenderFillRect(renderer, &rect);
 }
